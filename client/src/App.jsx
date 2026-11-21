@@ -9,7 +9,7 @@ export default function App() {
   useEffect(() => {
     fetch('/api/health')               // ask the backend (goes through the proxy)
       .then((res) => res.json())       // read the JSON answer
-      .then((data) => setStatus(data.status))  // show "ok"
+      .then((data) => setStatus(data.status || data.error))  // show "ok"
       .catch(() => setStatus('API not reachable')); // backend down or proxy wrong
   }, []);
 

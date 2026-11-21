@@ -1,0 +1,522 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DIRECTOR
+  SALES
+  TECHNICIAN
+  WAREHOUSE
+  SERVICE
+  ACCOUNTS
+}
+
+enum LeadSource {
+  WEB
+  CALL
+  WHATSAPP
+  WALK_IN
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  SURVEY_REQUESTED
+  SURVEY_APPROVED
+  QUOTED
+  WON
+  LOST
+}
+
+enum SystemType {
+  ON_GRID
+  OFF_GRID
+}
+
+enum GridReliability {
+  RELIABLE
+  FREQUENT_CUTS
+  NO_GRID
+}
+
+enum SurveyStatus {
+  SCHEDULED
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum ProductCategory {
+  PANEL
+  INVERTER
+  BATTERY
+  CHARGE_CONTROLLER
+  MOUNTING
+  WIRING
+  SAFETY
+  SERVICE
+}
+
+enum OrderStatus {
+  QUOTE
+  ACCEPTED
+  CONFIRMED
+  DISPATCHED
+  INSTALLED
+  CLOSED
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PENDING
+  DISPATCHED
+}
+
+enum SerialStatus {
+  IN_STOCK
+  DELIVERED
+  REPLACED
+}
+
+enum JobStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TicketStatus {
+  OPEN
+  DIAGNOSED
+  IN_REPAIR
+  AWAITING_CUSTOMER
+  CLOSED
+}
+
+enum RepairType {
+  PART
+  LABOUR
+}
+
+enum InvoiceType {
+  ADVANCE
+  FINAL
+  REPAIR
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  BANK_TRANSFER
+  CHEQUE
+  CARD
+}
+
+enum SubsidyStage {
+  NOT_STARTED
+  DOCUMENTS_COLLECTED
+  SUBMITTED
+  INSPECTION
+  APPROVED
+  DISBURSED
+}
+
+enum PurchaseStatus {
+  ORDERED
+  RECEIVED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  phone        String?
+  hourlyRate   Decimal  @default(0) @db.Decimal(10, 2)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  leads           Lead[]
+  surveys         Survey[]           @relation("SurveyTechnician")
+  approvedSurveys Survey[]           @relation("SurveyApprover")
+  jobs            InstallJob[]
+  timeLogs        TimeLog[]
+  tickets         Ticket[]
+  dispatches      Delivery[]
+  payouts         TechnicianPayout[]
+  notifications   Notification[]
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  email     String?
+  address   String
+  city      String?
+  pincode   String?
+  createdAt DateTime @default(now())
+
+  leads       Lead[]
+  orders      SalesOrder[]
+  serialUnits SerialUnit[]
+  tickets     Ticket[]
+  invoices    Invoice[]
+}
+
+model Lead {
+  id               Int              @id @default(autoincrement())
+  customerId       Int
+  source           LeadSource       @default(WEB)
+  status           LeadStatus       @default(NEW)
+  requestedKw      Int?
+  wantsSubsidy     Boolean          @default(false)
+  monthlyBill      Decimal?         @db.Decimal(10, 2)
+  roofAreaSqft     Int?
+  gridReliability  GridReliability?
+  recommendedKw    Int?
+  recommendedType  SystemType?
+  recommendedKitId Int?
+  assignedToId     Int?
+  lostReason       String?
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  recommendedKit Kit?        @relation(fields: [recommendedKitId], references: [id])
+  assignedTo     User?       @relation(fields: [assignedToId], references: [id])
+  survey         Survey?
+  order          SalesOrder?
+}
+
+model Survey {
+  id               Int          @id @default(autoincrement())
+  leadId           Int          @unique
+  technicianId     Int
+  scheduledDate    DateTime?
+  status           SurveyStatus @default(SCHEDULED)
+  roofDirection    String?
+  tiltDeg          Decimal?     @db.Decimal(5, 2)
+  cableDistanceM   Decimal?     @db.Decimal(7, 2)
+  measuredRoofSqft Int?
+  roofType         String?
+  recommendedKw    Int?
+  photos           String[]
+  notes            String?
+  submittedAt      DateTime?
+  approvedById     Int?
+  approvedAt       DateTime?
+  rejectReason     String?
+  createdAt        DateTime     @default(now())
+
+  lead       Lead  @relation(fields: [leadId], references: [id])
+  technician User  @relation("SurveyTechnician", fields: [technicianId], references: [id])
+  approvedBy User? @relation("SurveyApprover", fields: [approvedById], references: [id])
+}
+
+model SizingRule {
+  id          Int  @id @default(autoincrement())
+  kw          Int  @unique
+  unitsFrom   Int
+  unitsTo     Int?
+  minRoofSqft Int
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model Product {
+  id             Int             @id @default(autoincrement())
+  sku            String          @unique
+  name           String
+  category       ProductCategory
+  isSerialized   Boolean         @default(false)
+  warrantyMonths Int             @default(0)
+  costPrice      Decimal         @db.Decimal(12, 2)
+  salePrice      Decimal         @db.Decimal(12, 2)
+  stockQty       Int             @default(0)
+  reorderLevel   Int             @default(0)
+  createdAt      DateTime        @default(now())
+
+  kitItems      KitItem[]
+  orderLines    OrderLine[]
+  serialUnits   SerialUnit[]
+  repairLines   RepairLine[]
+  purchaseLines PurchaseLine[]
+}
+
+model Kit {
+  id   Int        @id @default(autoincrement())
+  name String
+  kw   Int
+  type SystemType
+
+  items  KitItem[]
+  orders SalesOrder[]
+  leads  Lead[]
+
+  @@unique([kw, type])
+}
+
+model KitItem {
+  id        Int @id @default(autoincrement())
+  kitId     Int
+  productId Int
+  qty       Int
+
+  kit     Kit     @relation(fields: [kitId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([kitId, productId])
+}
+
+model SalesOrder {
+  id             Int         @id @default(autoincrement())
+  customerId     Int
+  leadId         Int?        @unique
+  kitId          Int?
+  status         OrderStatus @default(QUOTE)
+  subtotal       Decimal     @db.Decimal(12, 2)
+  taxAmount      Decimal     @db.Decimal(12, 2)
+  total          Decimal     @db.Decimal(12, 2)
+  quoteToken     String      @unique @default(uuid())
+  installAddress String?
+  acceptedAt     DateTime?
+  acceptedByName String?
+  confirmedAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  lead        Lead?        @relation(fields: [leadId], references: [id])
+  kit         Kit?         @relation(fields: [kitId], references: [id])
+  lines       OrderLine[]
+  invoices    Invoice[]
+  serialUnits SerialUnit[]
+  delivery    Delivery?
+  job         InstallJob?
+  subsidy     Subsidy?
+}
+
+model OrderLine {
+  id          Int     @id @default(autoincrement())
+  orderId     Int
+  productId   Int
+  description String
+  qty         Int
+  unitPrice   Decimal @db.Decimal(12, 2)
+  unitCost    Decimal @db.Decimal(12, 2)
+  lineTotal   Decimal @db.Decimal(12, 2)
+
+  order   SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product    @relation(fields: [productId], references: [id])
+}
+
+model Delivery {
+  id             Int            @id @default(autoincrement())
+  orderId        Int            @unique
+  status         DeliveryStatus @default(PENDING)
+  dispatchedAt   DateTime?
+  dispatchedById Int?
+
+  order        SalesOrder @relation(fields: [orderId], references: [id])
+  dispatchedBy User?      @relation(fields: [dispatchedById], references: [id])
+}
+
+model SerialUnit {
+  id              Int          @id @default(autoincrement())
+  serialNo        String       @unique
+  productId       Int
+  status          SerialStatus @default(IN_STOCK)
+  orderId         Int?
+  customerId      Int?
+  purchaseOrderId Int?
+  deliveredAt     DateTime?
+  warrantyEnd     DateTime?
+  createdAt       DateTime     @default(now())
+
+  product       Product        @relation(fields: [productId], references: [id])
+  order         SalesOrder?    @relation(fields: [orderId], references: [id])
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  tickets       Ticket[]
+}
+
+model PurchaseOrder {
+  id         Int            @id @default(autoincrement())
+  supplier   String
+  status     PurchaseStatus @default(ORDERED)
+  total      Decimal        @db.Decimal(12, 2)
+  orderedAt  DateTime       @default(now())
+  receivedAt DateTime?
+
+  lines       PurchaseLine[]
+  serialUnits SerialUnit[]
+}
+
+model PurchaseLine {
+  id              Int     @id @default(autoincrement())
+  purchaseOrderId Int
+  productId       Int
+  qty             Int
+  unitCost        Decimal @db.Decimal(12, 2)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+}
+
+model InstallJob {
+  id            Int       @id @default(autoincrement())
+  orderId       Int       @unique
+  scheduledDate DateTime?
+  status        JobStatus @default(SCHEDULED)
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  installedKw   Decimal?  @db.Decimal(4, 2)
+  powerTested   Boolean   @default(false)
+  photos        String[]
+  signature     String?   @db.Text
+  signedByName  String?
+  createdAt     DateTime  @default(now())
+
+  order       SalesOrder @relation(fields: [orderId], references: [id])
+  technicians User[]
+  timeLogs    TimeLog[]
+}
+
+model TimeLog {
+  id           Int      @id @default(autoincrement())
+  technicianId Int
+  jobId        Int?
+  ticketId     Int?
+  workDate     DateTime
+  hours        Decimal  @db.Decimal(5, 2)
+
+  technician User        @relation(fields: [technicianId], references: [id])
+  job        InstallJob? @relation(fields: [jobId], references: [id])
+  ticket     Ticket?     @relation(fields: [ticketId], references: [id])
+}
+
+model Ticket {
+  id                  Int          @id @default(autoincrement())
+  serialUnitId        Int
+  customerId          Int
+  assignedToId        Int?
+  fault               String
+  faultCode           String?
+  faultDate           DateTime
+  underWarranty       Boolean
+  warrantyReason      String
+  status              TicketStatus @default(OPEN)
+  customerConfirmedAt DateTime?
+  confirmedByName     String?
+  closedAt            DateTime?
+  createdAt           DateTime     @default(now())
+
+  serialUnit  SerialUnit   @relation(fields: [serialUnitId], references: [id])
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  assignedTo  User?        @relation(fields: [assignedToId], references: [id])
+  repairLines RepairLine[]
+  timeLogs    TimeLog[]
+  invoice     Invoice?
+}
+
+model RepairLine {
+  id           Int        @id @default(autoincrement())
+  ticketId     Int
+  type         RepairType
+  productId    Int?
+  description  String
+  qty          Decimal    @db.Decimal(8, 2)
+  cost         Decimal    @db.Decimal(12, 2)
+  priceCharged Decimal    @db.Decimal(12, 2)
+
+  ticket  Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+}
+
+model Invoice {
+  id         Int           @id @default(autoincrement())
+  number     String        @unique
+  type       InvoiceType
+  status     InvoiceStatus @default(DRAFT)
+  customerId Int
+  orderId    Int?
+  ticketId   Int?          @unique
+  amount     Decimal       @db.Decimal(12, 2)
+  issueDate  DateTime      @default(now())
+  dueDate    DateTime?
+  sentAt     DateTime?
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  order    SalesOrder? @relation(fields: [orderId], references: [id])
+  ticket   Ticket?     @relation(fields: [ticketId], references: [id])
+  payments Payment[]
+}
+
+model Payment {
+  id        Int           @id @default(autoincrement())
+  invoiceId Int
+  amount    Decimal       @db.Decimal(12, 2)
+  method    PaymentMethod
+  reference String?
+  paidAt    DateTime      @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+}
+
+model Subsidy {
+  id             Int          @id @default(autoincrement())
+  orderId        Int          @unique
+  scheme         String?
+  amount         Decimal?     @db.Decimal(12, 2)
+  stage          SubsidyStage @default(NOT_STARTED)
+  stageUpdatedAt DateTime     @default(now())
+  notes          String?
+
+  order SalesOrder @relation(fields: [orderId], references: [id])
+}
+
+model TechnicianPayout {
+  id           Int       @id @default(autoincrement())
+  technicianId Int
+  periodStart  DateTime
+  periodEnd    DateTime
+  hours        Decimal   @db.Decimal(7, 2)
+  amount       Decimal   @db.Decimal(12, 2)
+  paidAt       DateTime?
+
+  technician User @relation(fields: [technicianId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}

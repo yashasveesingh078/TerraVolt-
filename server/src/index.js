@@ -1,6 +1,6 @@
 // 1. Load settings from .env into process.env
 import 'dotenv/config';
-
+import prisma from './db.js';
 // 2. Import the libraries we need
 import express from 'express';
 import cookieParser from 'cookie-parser';
@@ -14,8 +14,9 @@ app.use(cookieParser());     // lets us read cookies (req.cookies), used for log
 app.use('/uploads', express.static('uploads')); // serves uploaded photos as files
 
 // 5. A test route: if this works, the server works
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  await prisma.$queryRaw`SELECT 1`;
+  res.json({ status: 'ok', database: 'connected', time: new Date().toISOString() });
 });
 
 // 6. Error handler: catches any error thrown in a route
