@@ -1,4 +1,6 @@
 // 1. Load settings from .env into process.env
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
 import 'dotenv/config';
 import prisma from './db.js';
 // 2. Import the libraries we need
@@ -18,7 +20,8 @@ app.get('/api/health', async (req, res) => {
   await prisma.$queryRaw`SELECT 1`;
   res.json({ status: 'ok', database: 'connected', time: new Date().toISOString() });
 });
-
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 // 6. Error handler: catches any error thrown in a route
 //    and sends a clean message instead of crashing.
 //    It must be the LAST app.use.

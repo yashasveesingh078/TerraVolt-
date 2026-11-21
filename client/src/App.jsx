@@ -1,30 +1,51 @@
-import { useEffect, useState } from 'react';
-import { Sun } from 'lucide-react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useAuth } from './context/AuthContext.jsx';
+import { homePath } from './config/navigation.js';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Layout from './components/Layout.jsx';
+import Login from './pages/Login.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import Placeholder from './pages/Placeholder.jsx';
+
+// Short helper: only these roles (plus the director) can open this page
+const only = (roles, page) => <ProtectedRoute roles={roles}>{page}</ProtectedRoute>;
+
+// "/" sends each person to their own home page
+function HomeRedirect() {
+  const { user } = useAuth();
+  return <Navigate to={homePath(user.role)} replace />;
+}
 
 export default function App() {
-  // 1. A piece of state: what the page currently shows about the API
-  const [status, setStatus] = useState('checking...');
-
-  // 2. Runs once when the page first loads
-  useEffect(() => {
-    fetch('/api/health')               // ask the backend (goes through the proxy)
-      .then((res) => res.json())       // read the JSON answer
-      .then((data) => setStatus(data.status || data.error))  // show "ok"
-      .catch(() => setStatus('API not reachable')); // backend down or proxy wrong
-  }, []);
-
-  // 3. What appears on screen
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="rounded-xl bg-white p-8 shadow">
-        <div className="flex items-center gap-2">
-          <Sun className="text-amber-500" />
-          <h1 className="text-2xl font-bold text-slate-800">TerraVolt</h1>
-        </div>
-        <p className="mt-2 text-slate-600">
-          API: <span className={status === 'ok' ? 'text-green-600' : 'text-red-600'}>{status}</span>
-        </p>
-      </div>
-    </div>
+    <Routes>
+      {/* ---------- Public pages (no login) ---------- */}
+      <Route path="/login" element={<Login />} />
+      {/* Step 8: /enquiry   Step 10: /quote/:token */}
+
+      {/* ---------- Staff pages: must be logged in, shown inside the Layout ---------- */}
+      <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <Route path="/" element={<HomeRedirect />} />
+
+        <Route path="/dashboard"       element={only([], <Dashboard />)} />
+        <Route path="/leads"           element={only(['SALES'], <Placeholder title="Leads" />)} />
+        <Route path="/orders"          element={only(['SALES', 'ACCOUNTS'], <Placeholder title="Quotes & orders" />)} />
+        <Route path="/jobs"            element={only(['SALES'], <Placeholder title="Installation jobs" />)} />
+        <Route path="/my-jobs"         element={only(['TECHNICIAN'], <Placeholder title="My jobs" />)} />
+        <Route path="/inventory"       element={only(['WAREHOUSE'], <Placeholder title="Inventory" />)} />
+        <Route path="/purchases"       element={only(['WAREHOUSE', 'ACCOUNTS'], <Placeholder title="Purchases" />)} />
+        <Route path="/serials"         element={only(['WAREHOUSE', 'SERVICE'], <Placeholder title="Serial search" />)} />
+        <Route path="/tickets"         element={only(['SERVICE'], <Placeholder title="Service tickets" />)} />
+        <Route path="/invoices"        element={only(['ACCOUNTS'], <Placeholder title="Invoices" />)} />
+        <Route path="/subsidies"       element={only(['ACCOUNTS', 'SALES'], <Placeholder title="Subsidies" />)} />
+        <Route path="/payroll"         element={only(['ACCOUNTS'], <Placeholder title="Technician pay" />)} />
+        <Route path="/reports/monthly" element={only([], <Placeholder title="Monthly report" />)} />
+        <Route path="/users"           element={only([], <Placeholder title="Staff" />)} />
+        <Route path="/settings/sizing" element={only([], <Placeholder title="Sizing rules" />)} />
+      </Route>
+
+      {/* Unknown URL → home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

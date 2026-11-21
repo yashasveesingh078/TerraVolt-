@@ -5,6 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TerraVolt</title>
+    <script>
+  // Apply the saved theme before React loads (prevents a white flash)
+  try {
+    const saved = localStorage.getItem('theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (saved === 'dark' || (!saved && systemDark)) {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {}
+</script>
   </head>
   <body>
     <div id="root"></div>

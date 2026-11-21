@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+/* dark: classes apply when <html> has class="dark" (set by our toggle) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Make scrollbars and form controls dark too */
+html.dark {
+  color-scheme: dark;
+}
