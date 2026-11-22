@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, FileText, Package, ShoppingCart, ScanLine, HardHat,
-  Wrench, LifeBuoy, Receipt, Landmark, Wallet, TrendingUp, UserCog, Settings,
+  Wrench, LifeBuoy, Receipt, Landmark, Wallet, TrendingUp, UserCog, Settings, ClipboardCheck
 } from 'lucide-react';
 
 // Human-readable role names
@@ -32,19 +32,20 @@ export function homePath(role) {
 export const navItems = [
   { path: '/dashboard',       label: 'Dashboard',          icon: LayoutDashboard, roles: [] },
   { path: '/leads',           label: 'Leads',              icon: Users,           roles: ['SALES'] },
+  { path: '/surveys', label: 'Site surveys', icon: ClipboardCheck, roles: ['SALES', 'TECHNICIAN'] },
   { path: '/orders',          label: 'Quotes & orders',    icon: FileText,        roles: ['SALES', 'ACCOUNTS'] },
   { path: '/jobs',            label: 'Installation jobs',  icon: Wrench,          roles: ['SALES'] },
   { path: '/my-jobs',         label: 'My jobs',            icon: HardHat,         roles: ['TECHNICIAN'], hideForDirector: true },
   { path: '/inventory',       label: 'Inventory',          icon: Package,         roles: ['WAREHOUSE'] },
-  { path: '/purchases',       label: 'Purchases',          icon: ShoppingCart,    roles: ['WAREHOUSE', 'ACCOUNTS'] },
+//   { path: '/purchases',       label: 'Purchases',          icon: ShoppingCart,    roles: ['WAREHOUSE', 'ACCOUNTS'] },
   { path: '/serials',         label: 'Serial search',      icon: ScanLine,        roles: ['WAREHOUSE', 'SERVICE'] },
   { path: '/tickets',         label: 'Service tickets',    icon: LifeBuoy,        roles: ['SERVICE'] },
   { path: '/invoices',        label: 'Invoices',           icon: Receipt,         roles: ['ACCOUNTS'] },
   { path: '/subsidies',       label: 'Subsidies',          icon: Landmark,        roles: ['ACCOUNTS', 'SALES'] },
   { path: '/payroll',         label: 'Technician pay',     icon: Wallet,          roles: ['ACCOUNTS'] },
   { path: '/reports/monthly', label: 'Monthly report',     icon: TrendingUp,      roles: [] },
-  { path: '/users',           label: 'Staff',              icon: UserCog,         roles: [] },
-  { path: '/settings/sizing', label: 'Sizing rules',       icon: Settings,        roles: [] },
+//   { path: '/users',           label: 'Staff',              icon: UserCog,         roles: [] },
+//   { path: '/settings/sizing', label: 'Sizing rules',       icon: Settings,        roles: [] },
 ];
 
 // The items one role should see in the sidebar

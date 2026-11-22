@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Sun, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { homePath } from '../config/navigation.js';
@@ -114,6 +114,12 @@ export default function Login() {
             ))}
           </div>
         </div>
+        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+          Customer?{' '}
+          <Link to="/enquiry" className="font-medium text-amber-600 hover:underline">
+            Get a free solar estimate
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Sun, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { navForRole, roleLabels } from '../config/navigation.js';
+import NotificationBell from './NotificationBell.jsx'
 import ThemeToggle from './ThemeToggle.jsx';
 
 export default function Layout() {
@@ -65,9 +66,9 @@ export default function Layout() {
               <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{user.name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabels[user.role]}</p>
             </div>
-
+            <NotificationBell />
             <ThemeToggle />
-
+            
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
